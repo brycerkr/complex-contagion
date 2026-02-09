@@ -307,16 +307,17 @@ def moreStats(G):
     neighbors.sort()
     print(neighbors)
 
-    unactivated = G.nodes - set(activated.keys())
-    print([len(list(G.neighbors(node))) for node in unactivated])
+    # unactivated = G.nodes - set(activated.keys())
+    # print([len(list(G.neighbors(node))) for node in unactivated])
 
 
 
-G = nx.read_edgelist("facebook_combined.txt")
+G = nx.read_edgelist("Wiki-Vote.txt", comments = "#")
+moreStats(G)
 seed_num = int((G.number_of_nodes() * 0.05))
 print("Number of seed nodes", seed_num)
-# seeds = highest_degree(G, seed_num)
-seeds = coreHD(G, seed_num)
+seeds = highest_degree(G, seed_num)
+# seeds = coreHD(G, seed_num)
 activated = threshold(G, seeds, 4)
-print(activated)
+# print(activated)
 print("Total activated nodes: ", len(activated))
