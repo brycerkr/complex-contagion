@@ -1,71 +1,16 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 import random
+from matplotlib import pyplot as plt
 import networkx as nx
+import numpy as np
+from heuristics import highest_degree, coreHD
 
-def highest_degree(G, seed_num):
-    """
-    Returns seed_num nodes with highest degree in G.
-    
-    :param G: Graph
-    :param seed_num: Size of desired set
-    """
-    # find the minimum value of k for the number of seed nodes
-    k_min = min(sorted(dict(G.degree()).values(), reverse=True)[:seed_num])
-        
-    # select all nodes with k above k_min
-    high_k_nodes = [n for n, k in dict(G.degree()).items() if k > k_min]
 
-    # select all nodes with k = k_min
-    k_min_nodes = [n for n, k in dict(G.degree()).items() if k == k_min]
 
-    # nodes we need randomly pick from k_min_nodes to meet seed size
-    sample_size = seed_num - len(high_k_nodes)
-
-    # select seed nodes and update seed statistics
-    seed_nodes_ = high_k_nodes + random.sample(k_min_nodes, sample_size)
-
-    seed_nodes = set(seed_nodes_)  # for fast lookup
-    return seed_nodes
-
-def coreHD(G,seeds):
-    H = G.copy().copy()
-    H.remove_edges_from(nx.selfloop_edges(H))
-    seed_nodes = []
-    for i in range(seeds):
-        print("coreHD iter ", i)
-        # find k=2 core
-        kcore = nx.k_core(H, k=2)
-
-        # find node or nodes with max degree node
-        k_max = max(dict(kcore.degree()).values())
-
-        # if mode candidates pick random node
-        node = random.choice([n for n, k in dict(kcore.degree()).items() if k == k_max])
-
-        H.remove_node(node)
-        seed_nodes.append(node)
-
-    return set(seed_nodes)
-
-def ICM(G, seed_nodes_, p_infection):
-    '''
-        Independent cascade model
-        ------------------
-        Input:
-        * G: directed opr undirected network
-        * seed_nodes_: list of seed nodes or number of initial seeds to simulate the dynamics from
-        * p: infection/spreading probability
-        ------------------
-        Output:
-        * for activated node, timestamp of when they were activated
-        ------------------
-        '''
-    # if type(seeds) != list:
-    # infected = set(random.sample(network.nodes(),seeds)) # infect seeds
-    # else:
-    infected = set(seed_nodes_)
+def ICM_gen(G, infected, p_infection):
 
     activated = infected.copy()
+    activation_edges = set()
     activation_time = defaultdict(int)
 
     # add initial seed to activated & activation_time
@@ -76,6 +21,7 @@ def ICM(G, seed_nodes_, p_infection):
     # run infection process
     while infected != set():
         new_infected = set()
+        
         for node in infected:
             # print node
             for neighbor in G.neighbors(node):
@@ -90,6 +36,14 @@ def ICM(G, seed_nodes_, p_infection):
                     new_infected.add(neighbor)
                     # print "--- infected"
                     activated.add(neighbor)  # add node here to prevent newly infected nodes to be infected again
+                    activation_edges.add((node,neighbor))
+
+        yield {
+            "t": t,
+            "active": activated.copy(),
+            "new": new_infected.copy(),
+            "edges": activation_edges.copy(),
+        }
 
         # set of newly infected nodes
         infected = new_infected.copy()
@@ -98,14 +52,14 @@ def ICM(G, seed_nodes_, p_infection):
         t += 1
 
     # return list of infected/recovered nodes
-    return activation_time
+    # return activation_time
 
-def threshold(G, activated, k):
+def threshold_gen(G, infected, k):
 
-    remaining = set(G.nodes) - activated
+    remaining = set(G.nodes) - infected
+    activated = infected.copy()
+    new_infected = remaining.copy()
     activation_edges = set()
-
-    activation_time = defaultdict(int)
 
     print("Starting threshold simulation")
 
@@ -118,12 +72,11 @@ def threshold(G, activated, k):
         for node in remaining:
             infected_neighbors = 0
             for neighbor in G.neighbors(node):
-                if neighbor in activated:
+                if neighbor in infected:
                     infected_neighbors += 1
-            if infected_neighbors >= k:
+            if infected_neighbors > k:
                 
                 new_infected.add(node)
-                activation_time[node] = t
                 
                 for neighbor in G.neighbors(node):
                     activation_edges.add((node,neighbor))
@@ -131,193 +84,129 @@ def threshold(G, activated, k):
         if not new_infected:
             break
         
-        t += 1
         remaining -= new_infected
         activated |= new_infected
-    
-    return activation_time
 
-def threshold_range(G, activated, kl, ku):
+        yield {
+            "t": t,
+            "active": activated.copy(),
+            "new": new_infected.copy(),
+            "edges": activation_edges.copy()
+        }
 
-    remaining = set(G.nodes) - activated
-    activation_edges = set()
+def anim_demo():
+    """
+    Demo of animation for infection spreading
+    Has a few glitches
+    Works best for a few 100 nodes max
+    """
 
-    activation_time = defaultdict(int)
+    n = 400    #Size of network
 
-    print("Starting threshold simulation")
+    m = 2      #Min. degree for B-A
+    o = 0.05    #Edge p for E-R
 
-    thresholds = defaultdict(int)
+    seed_size = 80      #Size of seeded set
+    p_infection = 0.3  #Transmission probability -- good values are 0.3 for B-A and 0.15 for E-R
 
-    for node in G.nodes:
-        thresholds[node] = random.randint(kl, ku)
 
-    t = 1
+    SF = nx.barabasi_albert_graph(n,m)
+    #SF = nx.erdos_renyi_graph(n, o)
 
-    while True:
+    #pos = nx.kamada_kawai_layout(SF)
+    pos = nx.spring_layout(SF, k=1.4, iterations=600)
 
-        new_infected = set()
+    seed_nodes = highest_degree(SF, seed_size)
 
-        for node in remaining:
-            infected_neighbors = 0
-            for neighbor in G.neighbors(node):
-                if neighbor in activated:
-                    infected_neighbors += 1
-            if infected_neighbors >= thresholds[node]:
-                
-                new_infected.add(node)
-                activation_time[node] = t
-                
-                for neighbor in G.neighbors(node):
-                    activation_edges.add((node,neighbor))
+    frames = list(ICM_gen(SF, seed_nodes, p_infection))
+    # frames = list(threshold(SF, seed_nodes, 2))
 
-        if not new_infected:
-            break
+    fig, ax = plt.subplots()
+
+    nodes = nx.draw_networkx_nodes(
+        SF, pos,
+        node_size=80,
+        node_color="lightblue",
+        ax=ax
+    )
+
+    edges = nx.draw_networkx_edges(
+        SF,
+        pos,
+        arrows=False,
+        edge_color="lightgray",
+        alpha=0.2,
+        width=3.0,
+        ax=ax
+    )
+
+    activated_edges = set()
+
+    def init():
+        state = frames[0]
         
-        t += 1
-        remaining -= new_infected
-        activated |= new_infected
-    
-    return activation_time
+        node_colors = [
+            "red" if n in state["active"] else "lightblue"
+            for n in SF.nodes()
+        ]
 
-def threshold_chance(G, activated, k, p):
+        edge_colors = [
+            "red" if e in state["edges"] else "lightgray"
+            for e in SF.edges()
+        ]
 
-    remaining = set(G.nodes) - activated
-    activation_edges = set()
+        nodes.set_color(node_colors)
+        edges.set_color(edge_colors)
 
-    activation_time = defaultdict(int)
+        ax.set_title("t = 0")
 
-    print("Starting threshold simulation")
+        return nodes,
 
-    t = 1
+    def update(i):
+        state = frames[i]
+        activated_edges.update(state["edges"])
 
-    while True:
+        active = state["active"]
+        new = state["new"]
 
-        new_infected = set()
+        active = state["active"]
 
-        for node in remaining:
-            infected_neighbors = 0
-            for neighbor in G.neighbors(node):
-                if neighbor in activated:
-                    infected_neighbors += 1
-            if infected_neighbors >= k and random.random() < p:
-                
-                new_infected.add(node)
-                activation_time[node] = t
-                
-                for neighbor in G.neighbors(node):
-                    activation_edges.add((node,neighbor))
+        colors = []
+        for n in SF.nodes():
+            if n in new:
+                colors.append("orange")
+            elif n in active:
+                colors.append("red")
+            else:
+                colors.append("lightblue")
+        nodes.set_color(colors)
 
-        if not new_infected:
-            break
-        
-        t += 1
-        remaining -= new_infected
-        activated |= new_infected
-    
-    return activation_time
+        edge_alphas = []
+        edge_colors = []
+        for u, v in SF.edges():
+            if (u, v) in activated_edges or (v, u) in activated_edges:
+                edge_alphas.append(0.5)
+                edge_colors.append("red")
+            else:
+                edge_alphas.append(0.2)
+                edge_colors.append("lightgray")
+        edges.set_alpha(edge_alphas)
+        edges.set_color(edge_colors)
 
-def threshold_chance_range(G, activated, kl, ku, p):
+        ax.set_title(f"t = {state['t']}")
 
-    remaining = set(G.nodes) - activated
-    activation_edges = set()
+        return nodes, edges
 
-    activation_time = defaultdict(int)
+    ax.set_axis_off()
 
-    print("Starting threshold simulation")
+    ani = animation.FuncAnimation(
+        fig,
+        update,
+        frames=len(frames),
+        init_func=init,
+        interval=1500,
+        blit=True,
+        cache_frame_data=False
+    )
 
-    thresholds = defaultdict(int)
-
-    for node in G.nodes:
-        thresholds[node] = random.randint(kl, ku)
-
-    t = 1
-
-    while True:
-
-        new_infected = set()
-
-        for node in remaining:
-            infected_neighbors = 0
-            for neighbor in G.neighbors(node):
-                if neighbor in activated:
-                    infected_neighbors += 1
-            if infected_neighbors >= thresholds[node] and random.random() < p:
-                
-                new_infected.add(node)
-                activation_time[node] = t
-                
-                for neighbor in G.neighbors(node):
-                    activation_edges.add((node,neighbor))
-
-        if not new_infected:
-            break
-        
-        t += 1
-        remaining -= new_infected
-        activated |= new_infected
-    
-    return activation_time
-
-def threshold_chance_range_single(G, activated, kl, ku, p):
-
-    print("Starting threshold simulation")
-
-    remaining = set(G.nodes) - activated
-    activation_edges = set()
-
-    activation_time = defaultdict(int)
-    thresholds = defaultdict(int)
-    attempted = set()
-
-    for node in G.nodes:
-        thresholds[node] = random.randint(kl, ku)
-
-    t = 1
-
-    while True:
-
-        new_infected = set()
-
-        for node in remaining:
-            infected_neighbors = 0
-            for neighbor in G.neighbors(node):
-                if neighbor in activated:
-                    infected_neighbors += 1
-            if infected_neighbors >= thresholds[node]:
-                attempted.add(node)
-                if random.random() < p:
-                    new_infected.add(node)
-                    activation_time[node] = t
-                    
-                    for neighbor in G.neighbors(node):
-                        activation_edges.add((node,neighbor))
-
-        if not new_infected:
-            break
-        
-        t += 1
-        remaining -= attempted
-        activated |= new_infected
-    
-    return activation_time
-
-def moreStats(G):
-    print("Number of nodes read", G.number_of_nodes())
-    neighbors = [len(list(G.neighbors(node))) for node in G.nodes]
-    neighbors.sort()
-    print(neighbors)
-
-    # unactivated = G.nodes - set(activated.keys())
-    # print([len(list(G.neighbors(node))) for node in unactivated])
-
-
-
-G = nx.read_edgelist("Wiki-Vote.txt", comments = "#")
-moreStats(G)
-seed_num = int((G.number_of_nodes() * 0.05))
-print("Number of seed nodes", seed_num)
-seeds = highest_degree(G, seed_num)
-# seeds = coreHD(G, seed_num)
-activated = threshold(G, seeds, 4)
-# print(activated)
-print("Total activated nodes: ", len(activated))
+    plt.show()

@@ -67,3 +67,16 @@ def coreHD(G,seeds):
         seed_nodes.append(node)
 
     return seed_nodes
+
+def random_selection(G, seeds):
+    seed_nodes = random.sample(sorted(G.nodes), seeds)
+    return seed_nodes
+
+def acquaintance(G, seeds):
+    random_nodes = random_selection(G, seeds)
+    seed_nodes = set()
+
+    for node in random_nodes:
+        seed_nodes.add(random.sample(G.neighbors(node),1))
+    
+    return seed_nodes
