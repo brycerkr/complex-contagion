@@ -6,32 +6,34 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mplc
 import matplotlib.ticker as mticker
 
-DEBUG = False
+DEBUG = True
 
 # Load graph
-matrix = np.loadtxt("data/vilno_69.csv", delimiter=",")
+""" matrix = np.loadtxt("data/vilno_69.csv", delimiter=",")
 matrix = matrix.astype(int)
-G = nx.from_numpy_array(matrix)
+G = nx.from_numpy_array(matrix) """
+G = nx.read_edgelist("data/facebook_combined.txt")
 
 # Basic graph setup:
 fig, ax = plt.subplots(figsize=(8, 8))
-pos = nx.spring_layout(G, seed=42, k=0.1, iterations=50)
+pos = nx.spring_layout(G, seed=42, k=0.6, iterations=80)
 
 """
 START COMPUTING COLORS
 """
 
 #Read file in 
-df = pd.read_csv("calcs/vilno_69_CHD_RND_em.csv")
-effective_measures = dict(zip(df["nodeID"], df["effective"]))
-non_seed_ems = df[df["seed_node"] == 0]["effective"].to_numpy()
+df = pd.read_csv("calcs/facebook_combined_HD_RND_2_seed_5_20_thres_calcs.csv")
+effective_measures = dict(zip(df["nodeID"], df["effective_tau"]))
+non_seed_ems = df[df["seed_node"] == 0]["effective_tau"].to_numpy()
 
 """ vmax = non_seed_ems.max() 
 vmin = non_seed_ems.min()
 norm = mplc.TwoSlopeNorm(1, vmin, vmax) """
 
 vmax = math.ceil(non_seed_ems.max())
-vmin = round(1/vmax,2)
+vmin = non_seed_ems.min()
+# vmin = round(1/vmax,2)
 norm = mplc.LogNorm(vmin,vmax)
 
 cmap = plt.cm.PuOr
@@ -95,5 +97,4 @@ if DEBUG:
     print(f"Max em: {vmax}")
     print(f"Min em: {vmin}")
 
-plt.show()
-
+plt.savefig("facebook_graph.png")
