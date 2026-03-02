@@ -2,7 +2,6 @@ import networkx as nx
 import numpy as np
 
 def load_graph(fn):
-    fn = "data/" + fn
     if fn.endswith(".csv"):
         return load_matrix(fn)
     elif fn.endswith(".txt"):

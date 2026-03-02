@@ -85,7 +85,7 @@ def simulate_all_permutations():
                         print(f"{n} simulations run")
 
                     for node in G.nodes:
-                        results[int(node)].append(recency.get(node,""))
+                        results[int(node)].append(recency.get(node,"")) # can have default as NaN once refactored to pkl
 
                 # Write results of each permutation to csv
                 write_to_csv(results, fn, HEU_ABR[h], kl, ku)
