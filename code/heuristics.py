@@ -1,8 +1,9 @@
 import random
 import networkx as nx
 
-def highest_degree(G, seed_num, **kwargs):
+def HD(G, seed_num, **kwargs):
     """
+    Highest Degree
     Returns seed_num nodes with highest degree in G.
     
     :param G: Graph
@@ -26,7 +27,7 @@ def highest_degree(G, seed_num, **kwargs):
     seed_nodes = set(seed_nodes_)  # for fast lookup
     return seed_nodes
 
-def degree_discount(G,seeds,p_infection, **kwargs):
+def DD(G,seeds,p_infection, **kwargs):
     # initializse stuff
     seed_nodes = set()
     dd_v = dict(G.degree())
@@ -49,7 +50,7 @@ def degree_discount(G,seeds,p_infection, **kwargs):
             dd_v[neigh] = d - 2*t - (d-t)*t*p_infection
     return set(seed_nodes)
 
-def coreHD(G,seeds, **kwargs):
+def CHD(G,seeds, **kwargs):
     H = G.copy().copy()
     H.remove_edges_from(nx.selfloop_edges(H))
     seed_nodes = []
@@ -68,12 +69,26 @@ def coreHD(G,seeds, **kwargs):
 
     return set(seed_nodes)
 
-def random_selection(G, seeds, **kwargs):
+def RND(G, seeds, **kwargs):
+    """
+    Random sampling
+    
+    :param G: Description
+    :param seeds: Description
+    :param kwargs: Description
+    """
     seed_nodes = random.sample(sorted(G.nodes), seeds)
     return set(seed_nodes)
 
-def acquaintance(G, seeds, **kwargs):
-    random_nodes = random_selection(G, seeds)
+def ACQ(G, seeds, **kwargs):
+    """
+    Acquaintance
+    
+    :param G: Description
+    :param seeds: Description
+    :param kwargs: Description
+    """
+    random_nodes = RND(G, seeds)
     seed_nodes = set()
 
     for node in random_nodes:

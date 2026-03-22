@@ -82,7 +82,7 @@ def threshold(G, infected, kl, ku) -> defaultdict[Any, int]:
         # for every node to activate (important for low k)
         k = len(list(G.neighbors(node)))
         p = random.uniform(kl,ku)
-        print(f"Sampled {p}")
+        # print(f"Sampled {p}")
         thresholds[node] = math.ceil(k * p)
 
         # Seed nodes activated in timestep 0
@@ -117,7 +117,7 @@ def threshold(G, infected, kl, ku) -> defaultdict[Any, int]:
 
     return activation_time
 
-def threshold_norm(G, infected, mean_threshold, threshold_std=0.25) -> defaultdict[Any, int]:
+def threshold_norm(G, infected, mean_threshold, threshold_std) -> defaultdict[Any, int]:
     """
     Implementation of a threshold model for information cascade simulation.
     Threshold sampled from a normal distribution.
@@ -182,7 +182,7 @@ def threshold_norm(G, infected, mean_threshold, threshold_std=0.25) -> defaultdi
 
     return activation_time
 
-def threshold_norm_special(G, infected, mean_threshold, threshold_std=0.2):
+def threshold_norm_special(G, infected, mean_threshold, threshold_std):
     """
     Implementation of a threshold model for information cascade simulation.
     Threshold sampled from a normal distribution.
