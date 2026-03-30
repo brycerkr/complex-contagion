@@ -3,7 +3,7 @@ import random
 from matplotlib import pyplot as plt
 import networkx as nx
 import numpy as np
-from heuristics import highest_degree, coreHD
+from heuristics import HD, CHD
 
 
 
@@ -116,7 +116,7 @@ def anim_demo():
     #pos = nx.kamada_kawai_layout(SF)
     pos = nx.spring_layout(SF, k=1.4, iterations=600)
 
-    seed_nodes = highest_degree(SF, seed_size)
+    seed_nodes = HD(SF, seed_size)
 
     frames = list(ICM_gen(SF, seed_nodes, p_infection))
     # frames = list(threshold(SF, seed_nodes, 2))

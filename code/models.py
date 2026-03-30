@@ -129,33 +129,23 @@ def threshold_norm(G, infected, mean_threshold, threshold_std) -> defaultdict[An
     :rtype: defaultdict[Any, int]
     """
 
-    activated = set(infected.copy())
-    remaining = set(G.nodes) - activated
+    # Prepare thresholds
+    ps = truncnorm_thresholds(len(G.nodes()), mean_threshold, threshold_std)
+    thresholds = apply_thresholds(G, ps)
     
     activation_time = defaultdict(int)
-    thresholds = defaultdict(int)
 
-    lower = 0
-    upper = 1
-
-    lower_bound = (lower - mean_threshold) / threshold_std
-    upper_bound = (upper - mean_threshold) / threshold_std
-
-    ps = truncnorm.rvs(lower_bound, upper_bound, loc=mean_threshold, scale=threshold_std, size=len(G.nodes))
-
-    for node, p in zip(G.nodes, ps):
-        # Randomize threshold to round up so at least 1 neighbor is required
-        # for every node to activate (important for low k)
-        # Note: in truncnorm, p might be 0
-        k = len(list(G.neighbors(node)))
-        thresholds[node] = max(1, math.ceil(k * p))
-
-        # Seed nodes activated in timestep 0
-        if node in activated:
+    # Activate seed nodes in timestep 0
+    for node in G.nodes():
+        if node in infected:
             activation_time[node] = 0
 
     # Start timestep at 1
     t = 1
+
+    # Initialize activated and remaining sets
+    activated = set(infected.copy())
+    remaining = set(G.nodes) - activated
 
     while True:
 
@@ -194,28 +184,23 @@ def threshold_norm_special(G, infected, mean_threshold, threshold_std):
     :rtype: defaultdict[Any, int]
     """
 
-    activated = set(infected.copy())
-    remaining = set(G.nodes) - activated
+    # Prepare thresholds
+    ps = truncnorm_thresholds(len(G.nodes()), mean_threshold, threshold_std)
+    thresholds = apply_thresholds(G, ps)
     
-    thresholds = defaultdict(int)
+    activation_time = defaultdict(int)
 
-    lower = 0
-    upper = 1
-
-    lower_bound = (lower - mean_threshold) / threshold_std
-    upper_bound = (upper - mean_threshold) / threshold_std
-
-    ps = truncnorm.rvs(lower_bound, upper_bound, loc=mean_threshold, scale=threshold_std, size=len(G.nodes))
-
-    for node, p in zip(G.nodes, ps):
-        # Randomize threshold to round up so at least 1 neighbor is required
-        # for every node to activate (important for low k)
-        # Note: in truncnorm, p might be 0
-        k = len(list(G.neighbors(node)))
-        thresholds[node] = max(1, math.ceil(k * p))
+    # Activate seed nodes in timestep 0
+    for node in G.nodes():
+        if node in infected:
+            activation_time[node] = 0
 
     # Start timestep at 1
     t = 1
+
+    # Initialize activated and remaining sets
+    activated = set(infected.copy())
+    remaining = set(G.nodes) - activated
 
     while True:
 
@@ -240,3 +225,33 @@ def threshold_norm_special(G, infected, mean_threshold, threshold_std):
         activated |= new_infected
 
     return activated
+
+def truncnorm_thresholds(size, mean_threshold, threshold_std):
+
+    lower, upper = 0, 1     # Abscissae of truncated normal distribution
+
+    # Calculate abscissae in standard deviations from mean for truncnorm function
+    lower_bound = (lower - mean_threshold) / threshold_std
+    upper_bound = (upper - mean_threshold) / threshold_std
+
+    return truncnorm.rvs(lower_bound, upper_bound, loc=mean_threshold, scale=threshold_std, size=size)
+
+def uniform_thresholds(size, lower, upper):
+    ps = []
+
+    for _ in range(size):
+        ps.append(random.uniform(lower,upper))
+    
+    return ps
+
+def apply_thresholds(G, ps):
+
+    thresholds = defaultdict(int)
+
+    for node, p in zip(G.nodes, ps):
+        k = G.degree[node]                         # Get degree of node
+        thres = math.ceil(k * p)                   # Ceiling to whole number
+        thresholds[node] = max(1, thres)      # Because theoretically truncnorm can sample 0 
+
+    return thresholds 
+      
