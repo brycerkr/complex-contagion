@@ -1,3 +1,4 @@
+import os
 import pickle
 import networkx as nx
 import numpy as np
@@ -27,6 +28,13 @@ def load_pickle_file(file_path):
 def save_pickle_file(file_path, data):
     with open(file_path, 'wb') as file:
         pickle.dump(data, file)
+
+def for_each_file(base_dir, func):
+    for root, dirs, files in os.walk(base_dir):
+        for dir_name in dirs:
+            sub_dir = os.path.join(root, dir_name)
+            if not any(os.path.isdir(os.path.join(sub_dir, name)) for name in os.listdir(sub_dir)):
+                func()
 
 metadata = {
     "threshold_distribution" : "",
