@@ -1,3 +1,4 @@
+import gzip
 import os
 import pickle
 import networkx as nx
@@ -22,12 +23,28 @@ def load_matrix(fn):
     return G
 
 def load_pickle_file(file_path):
-    with open(file_path, 'rb') as file:
-        return pickle.load(file)
+    try:
+        with open(file_path, 'rb') as file:
+            return pickle.load(file)
+    except (EOFError, pickle.UnpicklingError) as e:
+        print(f"Error loading {file_path}: {e}")
+        return None
+    
+def load_compressed_pickle(file_path):
+    try:
+        with gzip.open(file_path, "rb") as file:
+            return pickle.load(file)
+    except (EOFError, pickle.UnpicklingError, OSError) as e:
+        print(f"Error loading {file_path}: {e}")
+        return None
 
 def save_pickle_file(file_path, data):
     with open(file_path, 'wb') as file:
         pickle.dump(data, file)
+
+def save_compressed_pickle(file_path, data):
+    with gzip.open(str(file_path) + ".gz", "wb") as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 def for_each_file(base_dir, func):
     for root, dirs, files in os.walk(base_dir):

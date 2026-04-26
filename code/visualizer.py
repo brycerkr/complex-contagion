@@ -10,7 +10,7 @@ from utils import load_graph, load_pickle_file
 DEBUG = True
 
 # Load graph
-G = load_graph("datasets/village.csv")
+G = load_graph("datasets_ignored/village.csv")
 
 # Basic graph setup:
 fig, ax = plt.subplots(figsize=(8, 8))
