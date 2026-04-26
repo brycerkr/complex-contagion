@@ -42,3 +42,14 @@ https://arxiv.org/abs/2405.10187
 
 https://academic.oup.com/pnasnexus/article-abstract/4/10/pgaf291/8292699
 
+### Influence maximization in social networks: Theories, methods and challenges
+
+https://www.sciencedirect.com/science/article/pii/S2590005622000972#b5
+
+### Influence Maximization
+
+https://snap-stanford.github.io/cs224w-notes/network-methods/influence-maximization
+
+### Maximizing the spread of influence through a social network
+
+https://dl.acm.org/doi/10.1145/956750.956769
