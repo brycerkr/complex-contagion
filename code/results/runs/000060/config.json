@@ -1,0 +1,11 @@
+{
+  "dataset": "fb",
+  "heuristic": "CHD",
+  "cascade_model": "threshold_norm",
+  "n_iters": 1000,
+  "fIA": 0.01,
+  "n_seeds": 40,
+  "mean": 0.4,
+  "std": 0.25,
+  "run_id": "000060"
+}

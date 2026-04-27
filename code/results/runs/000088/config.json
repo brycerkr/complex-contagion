@@ -1,0 +1,11 @@
+{
+  "dataset": "wiki",
+  "heuristic": "CHD",
+  "cascade_model": "threshold_norm",
+  "n_iters": 1000,
+  "fIA": 0.01,
+  "n_seeds": 71,
+  "mean": 0.6,
+  "std": 0.15,
+  "run_id": "000088"
+}
